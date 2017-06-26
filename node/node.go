@@ -28,9 +28,14 @@ import (
 	"github.com/tendermint/tendermint/version"
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
+	events "github.com/tendermint/tmlibs/events.v2"
 	"github.com/tendermint/tmlibs/log"
 
 	_ "net/http/pprof"
+)
+
+const (
+	maxQueuedEventsPerSubscriber = 1000
 )
 
 type Node struct {
@@ -56,6 +61,7 @@ type Node struct {
 	proxyApp         proxy.AppConns              // connection to the application
 	rpcListeners     []net.Listener              // rpc servers
 	txIndexer        txindex.TxIndexer
+	pubsub           *events.Server
 }
 
 func NewNodeDefault(config *cfg.Config, logger log.Logger) *Node {
@@ -112,6 +118,13 @@ func NewNode(config *cfg.Config, privValidator *types.PrivValidator, clientCreat
 	_, err := eventSwitch.Start()
 	if err != nil {
 		cmn.Exit(cmn.Fmt("Failed to start switch: %v", err))
+	}
+
+	pubsub := events.NewServer(maxQueuedEventsPerSubscriber)
+	pubsub.SetLogger(logger.With("module", "events"))
+	_, err = pubsub.Start()
+	if err != nil {
+		cmn.Exit(cmn.Fmt("Failed to start pubsub: %v", err))
 	}
 
 	// Decide whether to fast-sync or not
@@ -199,6 +212,7 @@ func NewNode(config *cfg.Config, privValidator *types.PrivValidator, clientCreat
 	// add the event switch to all services
 	// they should all satisfy events.Eventable
 	SetEventSwitch(eventSwitch, bcReactor, mempoolReactor, consensusReactor)
+	consensusReactor.SetPubsub(pubsub)
 
 	// run the profile server
 	profileHost := config.ProfListenAddress
@@ -226,6 +240,7 @@ func NewNode(config *cfg.Config, privValidator *types.PrivValidator, clientCreat
 		consensusReactor: consensusReactor,
 		proxyApp:         proxyApp,
 		txIndexer:        txIndexer,
+		pubsub:           pubsub,
 	}
 	node.BaseService = *cmn.NewBaseService(logger, "Node", node)
 	return node
@@ -315,6 +330,7 @@ func (n *Node) ConfigureRPC() {
 	rpccore.SetAddrBook(n.addrBook)
 	rpccore.SetProxyAppQuery(n.proxyApp.Query())
 	rpccore.SetTxIndexer(n.txIndexer)
+	rpccore.SetPubsub(n.pubsub)
 	rpccore.SetLogger(n.Logger.With("module", "rpc"))
 }
 
@@ -330,7 +346,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	listeners := make([]net.Listener, len(listenAddrs))
 	for i, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
-		wm := rpcserver.NewWebsocketManager(rpccore.Routes, n.evsw)
+		wm := rpcserver.NewWebsocketManager(rpccore.Routes)
 		rpcLogger := n.Logger.With("module", "rpc-server")
 		wm.SetLogger(rpcLogger)
 		mux.HandleFunc("/websocket", wm.WebsocketHandler)

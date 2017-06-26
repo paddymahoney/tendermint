@@ -199,7 +199,8 @@ type ConsensusState struct {
 
 	// we use PubSub to trigger msg broadcasts in the reactor,
 	// and to notify external subscribers, eg. through a websocket
-	evsw types.EventSwitch
+	evsw   types.EventSwitch
+	pubsub types.Publisher
 
 	// a Write-Ahead Log ensures we can recover from any kind of crash
 	// and helps us avoid signing conflicting votes
@@ -254,6 +255,10 @@ func (cs *ConsensusState) SetLogger(l log.Logger) {
 // SetEventSwitch implements events.Eventable
 func (cs *ConsensusState) SetEventSwitch(evsw types.EventSwitch) {
 	cs.evsw = evsw
+}
+
+func (cs *ConsensusState) SetPubsub(pubsub types.Publisher) {
+	cs.pubsub = pubsub
 }
 
 func (cs *ConsensusState) String() string {
@@ -1230,6 +1235,7 @@ func (cs *ConsensusState) finalizeCommit(height int) {
 	//	* Fire on start up if we haven't written any new WAL msgs
 	//   Both options mean we may fire more than once. Is that fine ?
 	types.FireEventNewBlock(cs.evsw, types.EventDataNewBlock{block})
+	types.PublishEventNewBlock(cs.pubsub, block)
 	types.FireEventNewBlockHeader(cs.evsw, types.EventDataNewBlockHeader{block.Header})
 	eventCache.Flush()
 

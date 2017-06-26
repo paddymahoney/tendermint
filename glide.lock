@@ -1,5 +1,5 @@
-hash: 7b6edafcc8b8aad7c697bf745121afa3ae37402d8ae3e8f6193d1fabed619997
-updated: 2017-06-23T22:11:01.311106426-04:00
+hash: 5c1d282bea51fa5d48c1b0c62b923b10917a70fa5368048308e4ae1f834b1fad
+updated: 2017-06-28T08:54:42.345697454Z
 imports:
 - name: github.com/btcsuite/btcd
   version: b8df516b4b267acf2de46be593a9d948d1d2c420
@@ -116,14 +116,14 @@ imports:
   - data
   - data/base58
 - name: github.com/tendermint/merkleeyes
-  version: ce7de05896f560ddcc9207f65fea9901835dd238
+  version: 102aaf5a8ffda1846413fb22805a94def2045b9f
   subpackages:
   - app
   - client
   - iavl
   - testutil
 - name: github.com/tendermint/tmlibs
-  version: 7ce4da1eee6004d627e780c8fe91e96d9b99e459
+  version: 710630cea644d001b5bc17ff5fd41289dc49e404
   subpackages:
   - autofile
   - cli
@@ -132,6 +132,8 @@ imports:
   - common
   - db
   - events
+  - events.v2
+  - events.v2/query
   - flowrate
   - log
   - merkle

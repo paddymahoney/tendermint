@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/state/txindex"
 	"github.com/tendermint/tendermint/types"
+	events "github.com/tendermint/tmlibs/events.v2"
 	"github.com/tendermint/tmlibs/log"
 )
 
@@ -45,6 +46,7 @@ var (
 	genDoc    *types.GenesisDoc // cache the genesis structure
 	addrBook  *p2p.AddrBook
 	txIndexer txindex.TxIndexer
+	pubsub    *events.Server
 
 	logger log.Logger
 )
@@ -91,4 +93,8 @@ func SetTxIndexer(indexer txindex.TxIndexer) {
 
 func SetLogger(l log.Logger) {
 	logger = l
+}
+
+func SetPubsub(s *events.Server) {
+	pubsub = s
 }

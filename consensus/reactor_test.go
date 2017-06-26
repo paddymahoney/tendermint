@@ -10,6 +10,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/events"
+  events2 "github.com/tendermint/tmlibs/events.v2"
 )
 
 func init() {
@@ -34,7 +35,16 @@ func startConsensusNet(t *testing.T, css []*ConsensusState, N int, subscribeEven
 			t.Fatalf("Failed to start switch: %v", err)
 		}
 
+    pubsub := events2.NewServer(1)
+    pubsub.SetLogger(logger.With("module", "events", "validator", i))
+    _, err = pubsub.Start()
+    if err != nil {
+      t.Fatalf("Failed to start switch: %v", err)
+    }
+
 		reactors[i].SetEventSwitch(eventSwitch)
+    reactors[i].SetPubsub(pubsub)
+
 		if subscribeEventRespond {
 			eventChans[i] = subscribeToEventRespond(eventSwitch, "tester", types.EventStringNewBlock())
 		} else {

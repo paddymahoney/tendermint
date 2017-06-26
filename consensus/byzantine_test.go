@@ -9,6 +9,7 @@ import (
 	"github.com/tendermint/tendermint/types"
 	. "github.com/tendermint/tmlibs/common"
 	"github.com/tendermint/tmlibs/events"
+  events2 "github.com/tendermint/tmlibs/events.v2"
 )
 
 func init() {
@@ -71,9 +72,17 @@ func TestByzantine(t *testing.T) {
 		}
 		eventChans[i] = subscribeToEvent(eventSwitch, "tester", types.EventStringNewBlock(), 1)
 
+    pubsub := events2.NewServer(1)
+    pubsub.SetLogger(logger.With("module", "events", "validator", i))
+    _, err = pubsub.Start()
+    if err != nil {
+      t.Fatalf("Failed to start switch: %v", err)
+    }
+
 		conR := NewConsensusReactor(css[i], true) // so we dont start the consensus states
 		conR.SetLogger(logger.With("validator", i))
 		conR.SetEventSwitch(eventSwitch)
+    conR.SetPubsub(pubsub)
 
 		var conRI p2p.Reactor
 		conRI = conR

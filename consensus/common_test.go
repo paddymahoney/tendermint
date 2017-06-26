@@ -22,6 +22,7 @@ import (
 	. "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
+  events2 "github.com/tendermint/tmlibs/events.v2"
 
 	"github.com/tendermint/abci/example/counter"
 	"github.com/tendermint/abci/example/dummy"
@@ -250,7 +251,13 @@ func newConsensusStateWithConfig(thisConfig *cfg.Config, state *sm.State, pv *ty
 
 	evsw := types.NewEventSwitch()
 	evsw.SetLogger(log.TestingLogger().With("module", "events"))
+
+  pubsub := events2.NewServer(1)
+  pubsub.SetLogger(log.TestingLogger().With("module", "events"))
+
 	cs.SetEventSwitch(evsw)
+  cs.SetPubsub(pubsub)
+  pubsub.Start()
 	evsw.Start()
 	return cs
 }
